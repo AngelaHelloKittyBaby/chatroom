@@ -1,0 +1,29 @@
+# 聊天室配置文件
+# 修改后重新启动服务器即可生效
+
+server:
+  host: "0.0.0.0"       # 监听地址
+  port: 8888             # 监听端口
+  max_connections: 1000  # 最大连接数
+  read_timeout_sec: 90   # 读超时 (秒)
+  write_timeout_sec: 10  # 写超时 (秒)
+
+heartbeat:
+  interval_sec: 30       # 心跳发送间隔 (秒)
+  timeout_sec: 10        # 心跳响应超时 (秒)
+  max_failures: 3        # 连续失败次数上限
+
+rate_limit:
+  enable: true           # 是否启用限流
+  messages_per_second: 10 # 每秒允许消息数
+  burst_size: 20         # 突发容量
+
+validator:
+  min_username_len: 1    # 用户名最小长度
+  max_username_len: 20   # 用户名最大长度
+  max_message_len: 1000  # 单条消息最大长度 (字符)
+
+database:
+  enable: true
+  dsn: "root:456+@tcp(127.0.0.1:3306)/chatroom?charset=utf8mb4&parseTime=true&loc=Local"
+  auto_migrate: true

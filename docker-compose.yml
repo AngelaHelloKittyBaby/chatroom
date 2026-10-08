@@ -1,0 +1,40 @@
+﻿# 聊天室完整运行环境：MySQL + Go 服务端 + Go 客户端
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: "456+"
+      MYSQL_DATABASE: chatroom
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Go 聊天室服务端
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    depends_on:
+      - mysql
+    environment:
+      CHATROOM_DB_ENABLE: "true"
+      CHATROOM_DB_DSN: "root:456+@tcp(mysql:3306)/chatroom?charset=utf8mb4&parseTime=true&loc=Local"
+      CHATROOM_DB_AUTO_MIGRATE: "true"
+    ports:
+      - "8888:8888"
+
+  # Go 命令行客户端
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server
+    stdin_open: true
+    tty: true
+
+# 保存 MySQL 数据，删除容器后数据仍然保留
+volumes:
+  mysql_data:
