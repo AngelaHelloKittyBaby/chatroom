@@ -56,7 +56,14 @@ func processMessage(client *Client, msg *protocol.Message, msgValidator validato
 			}
 		}
 
-		client.Room().Broadcast(protocol.NewChatMessage(client.Name(), content))
+		if client.server != nil && client.server.redis != nil {
+			if err := client.server.enqueue(client.Room().Name(), protocol.NewChatMessage(client.Name(), content)); err != nil {
+				client.Send(protocol.NewErrorMessage("Message queue unavailable, please retry"))
+				return true
+			}
+		} else {
+			client.Room().Broadcast(protocol.NewChatMessage(client.Name(), content))
+		}
 		client.IncrRecv()
 		return true
 	}
@@ -78,6 +85,18 @@ func handleCommand(client *Client, content string, msgValidator validator.Messag
 	case "/quit":
 		client.Room().Leave(client)
 
+	case "/rank":
+		if client.server == nil {
+			client.Send(protocol.NewErrorMessage("Redis is disabled"))
+			return
+		}
+		client.server.showRanking(client, args)
+	case "/profile":
+		if client.server != nil {
+			client.server.showProfile(client)
+		}
+	case "/help":
+		client.Send(protocol.NewSystemMessage("/msg <username> <message> | /users | /rank [1-100] | /profile | /quit"))
 	case "/users":
 		client.Send(protocol.NewUsersMessage(client.Room().UserNames()))
 
@@ -117,6 +136,12 @@ func handlePrivateMsg(client *Client, args []string, msgValidator validator.Mess
 	}
 
 	privateMsg := protocol.NewPrivateMessage(client.Name(), targetName, privateContent)
+	if client.server != nil && client.server.redis != nil {
+		if err := client.server.enqueue(client.Room().Name(), privateMsg); err != nil {
+			client.Send(protocol.NewErrorMessage("Message queue unavailable, please retry"))
+		}
+		return
+	}
 	if !target.Send(privateMsg) {
 		client.Send(protocol.NewErrorMessage(fmt.Sprintf("cannot send to %s", targetName)))
 		return

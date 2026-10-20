@@ -127,3 +127,10 @@ func assignDefaultRole(ctx context.Context, tx *sql.Tx, userID uint64) error {
 	}
 	return nil
 }
+
+// FindUser retrieves public profile data without reading password hashes.
+func (s *MySQLStore) FindUser(ctx context.Context, id uint64) (*auth.User, error) {
+	var user auth.User
+	err := s.db.QueryRowContext(ctx, "SELECT id, username FROM sys_users WHERE id = ?", id).Scan(&user.ID, &user.Username)
+	return &user, err
+}

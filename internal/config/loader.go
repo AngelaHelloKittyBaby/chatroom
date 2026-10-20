@@ -15,12 +15,18 @@ import (
 func LoadFile(path string) (*Config, error) {
 	cfg := DefaultConfig()
 	if strings.TrimSpace(path) == "" {
+		if err := applyEnvOverrides(cfg); err != nil {
+			return nil, err
+		}
 		return cfg, nil
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if err := applyEnvOverrides(cfg); err != nil {
+				return nil, err
+			}
 			return cfg, nil
 		}
 		return nil, fmt.Errorf("打开配置文件失败: %w", err)
@@ -78,6 +84,22 @@ func applyValue(cfg *Config, section, key, value string) error {
 	fullKey := section + "." + key
 
 	switch fullKey {
+	case "redis.enable":
+		enabled, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		cfg.Redis.Enable = enabled
+	case "redis.addr":
+		cfg.Redis.Addr = value
+	case "redis.password":
+		cfg.Redis.Password = value
+	case "redis.db":
+		return setInt(value, &cfg.Redis.DB)
+	case "redis.prefix":
+		cfg.Redis.Prefix = value
+	case "redis.cache_ttl_sec":
+		return setInt(value, &cfg.Redis.CacheTTLSec)
 	case "server.host":
 		cfg.Server.Host = value
 	case "server.port":
@@ -134,6 +156,13 @@ func applyValue(cfg *Config, section, key, value string) error {
 }
 
 func applyEnvOverrides(cfg *Config) error {
+	for _, key := range []string{"enable", "addr", "password", "db", "prefix", "cache_ttl_sec"} {
+		if value, ok := os.LookupEnv("CHATROOM_REDIS_" + strings.ToUpper(key)); ok {
+			if err := applyValue(cfg, "redis", key, value); err != nil {
+				return fmt.Errorf("redis %s: %w", key, err)
+			}
+		}
+	}
 	if value := strings.TrimSpace(os.Getenv("CHATROOM_DB_ENABLE")); value != "" {
 		enabled, err := strconv.ParseBool(value)
 		if err != nil {

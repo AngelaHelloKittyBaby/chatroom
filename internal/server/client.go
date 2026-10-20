@@ -60,6 +60,8 @@ func (s ClientState) String() string {
 //   - 提供非阻塞消息发送
 //   - 统计连接数据
 type Client struct {
+	server   *Server
+	userID   uint64
 	id       string                 // 唯一标识 (UUID)
 	name     string                 // 显示名称
 	conn     net.Conn               // TCP 连接

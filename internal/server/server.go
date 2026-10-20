@@ -32,6 +32,7 @@ import (
 	"chatroom/internal/config"
 	"chatroom/internal/database"
 	"chatroom/internal/protocol"
+	"chatroom/internal/redisstore"
 	"chatroom/internal/validator"
 )
 
@@ -53,6 +54,7 @@ type Server struct {
 	rateLimiter RateLimiter
 	validator   validator.MessageValidator
 	userStore   auth.UserStore
+	redis       *redisstore.Store
 	slots       chan struct{}
 
 	ctx    context.Context
@@ -78,11 +80,26 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		}
 		userStore = store
 	}
+	var redisStore *redisstore.Store
+	if cfg.Redis.Enable {
+		redisCtx, redisCancel := context.WithTimeout(ctx, 5*time.Second)
+		var err error
+		redisStore, err = redisstore.Open(redisCtx, cfg.Redis)
+		redisCancel()
+		if err != nil {
+			cancel()
+			if userStore != nil {
+				userStore.Close()
+			}
+			return nil, err
+		}
+	}
 	roomMgr := NewRoomManager()
 	rl := NewTokenBucket(cfg.RateLimit)
 
 	srv := &Server{
 		cfg:         cfg,
+		redis:       redisStore,
 		roomMgr:     roomMgr,
 		rateLimiter: rl,
 		validator:   v,
@@ -120,6 +137,10 @@ func (s *Server) Start() error {
 	}
 
 	// 接受连接循环
+	if s.redis != nil {
+		s.wg.Add(1)
+		go func() { defer s.wg.Done(); s.redis.Consume(s.ctx, s.deliverQueued) }()
+	}
 	s.wg.Add(1)
 	go s.acceptLoop()
 
@@ -162,6 +183,9 @@ func (s *Server) Stop() error {
 		log.Println("⚠️ 关闭超时 (30s)")
 	}
 
+	if s.redis != nil {
+		s.redis.Close()
+	}
 	return nil
 }
 
@@ -212,6 +236,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	// --- 身份验证阶段 (循环，允许重试) ---
 	room := s.roomMgr.DefaultRoom()
 	var cleanName string
+	var userID uint64
 
 	for {
 		conn.SetReadDeadline(time.Now().Add(s.cfg.Server.ReadTimeout()))
@@ -254,6 +279,13 @@ func (s *Server) handleConnection(conn net.Conn) {
 				log.Printf("❌ 用户认证失败 [%s]: %s (%v)", remoteAddr, cleanName, err)
 				continue
 			}
+			cleanName = user.Username
+			userID = user.ID
+			if s.redis != nil {
+				if err := s.cacheUser(user); err != nil {
+					log.Printf("cache user: %v", err)
+				}
+			}
 			if created {
 				log.Printf("✅ 新用户注册成功 [%s]: %s (id=%d)", remoteAddr, user.Username, user.ID)
 			} else {
@@ -268,6 +300,8 @@ func (s *Server) handleConnection(conn net.Conn) {
 	// --- 创建客户端并加入房间 ---
 	clientID := generateID()
 	client := NewClient(clientID, cleanName, conn, room)
+	client.server = s
+	client.userID = userID
 
 	// 发送欢迎消息
 	client.Send(protocol.NewWelcomeMessage(

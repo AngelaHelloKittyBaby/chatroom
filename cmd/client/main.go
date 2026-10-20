@@ -122,6 +122,8 @@ func main() {
 }
 
 func printHelp() {
+	fmt.Println("  /rank [1-100]          Activity ranking")
+	fmt.Println("  /profile               User profile")
 	fmt.Println("━━━━━━━━━ 命令列表 ━━━━━━━━━")
 	fmt.Println("  /msg <用户名> <消息>  发送私聊消息")
 	fmt.Println("  /users                查看在线用户")

@@ -10,6 +10,24 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   # Go 聊天室服务端
   server:
@@ -17,8 +35,13 @@ services:
       context: .
       dockerfile: Dockerfile.server
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
+      CHATROOM_REDIS_ENABLE: "true"
+      CHATROOM_REDIS_ADDR: "redis:6379"
       CHATROOM_DB_ENABLE: "true"
       CHATROOM_DB_DSN: "root:456+@tcp(mysql:3306)/chatroom?charset=utf8mb4&parseTime=true&loc=Local"
       CHATROOM_DB_AUTO_MIGRATE: "true"
@@ -38,3 +61,4 @@ services:
 # 保存 MySQL 数据，删除容器后数据仍然保留
 volumes:
   mysql_data:
+  redis_data:

@@ -17,6 +17,7 @@ type Config struct {
 	Heartbeat HeartbeatCfg
 	RateLimit RateLimitCfg
 	Validator ValidatorCfg
+	Redis     RedisCfg
 	Database  DatabaseCfg
 }
 
@@ -86,6 +87,15 @@ type DatabaseCfg struct {
 	AutoMigrate bool
 }
 
+type RedisCfg struct {
+	Enable      bool
+	Addr        string
+	Password    string
+	DB          int
+	Prefix      string
+	CacheTTLSec int
+}
+
 // DefaultConfig 返回生产环境默认配置 (工厂函数)
 func DefaultConfig() *Config {
 	return &Config{
@@ -111,6 +121,7 @@ func DefaultConfig() *Config {
 			MaxUsernameLen: 20,
 			MaxMessageLen:  1000,
 		},
+		Redis: RedisCfg{Addr: "127.0.0.1:6379", Prefix: "chatroom:", CacheTTLSec: 300},
 		Database: DatabaseCfg{
 			Enable:      false,
 			DSN:         "",
@@ -159,6 +170,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Database.Enable && c.Database.DSN == "" {
 		return fmt.Errorf("database.dsn 不能为空")
+	}
+	if c.Redis.Enable && (c.Redis.Addr == "" || c.Redis.Prefix == "" || c.Redis.DB < 0 || c.Redis.CacheTTLSec <= 0) {
+		return fmt.Errorf("invalid redis configuration")
 	}
 	return nil
 }
