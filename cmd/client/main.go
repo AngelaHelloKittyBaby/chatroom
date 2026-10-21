@@ -66,7 +66,7 @@ func main() {
 	}
 
 	fmt.Printf("\n✅ 已进入聊天室，网名: %s\n", session.Name())
-	fmt.Println("💡 /msg 用户名 消息 → 私聊 | /users → 在线用户 | /quit → 退出")
+	fmt.Println("💡 /msg 用户名 消息 → 私聊 | /users → 在线用户 | /quit → 退出 | /rank → 查看前 10 名 | /rank [1-100] ")
 	fmt.Println("──────────────────────────────────────────────────")
 
 	// --- 启动接收协程 ---
@@ -122,12 +122,12 @@ func main() {
 }
 
 func printHelp() {
-	fmt.Println("  /rank [1-100]          Activity ranking")
-	fmt.Println("  /profile               User profile")
 	fmt.Println("━━━━━━━━━ 命令列表 ━━━━━━━━━")
 	fmt.Println("  /msg <用户名> <消息>  发送私聊消息")
 	fmt.Println("  /users                查看在线用户")
 	fmt.Println("  /quit                 退出聊天室")
+	fmt.Println("  /rank [1-100]          Activity ranking")
+	fmt.Println("  /profile               User profile")
 	fmt.Println("  /help                 显示此帮助")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━")
 }

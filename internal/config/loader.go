@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -23,13 +24,8 @@ func LoadFile(path string) (*Config, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			if err := applyEnvOverrides(cfg); err != nil {
-				return nil, err
-			}
-			return cfg, nil
-		}
-		return nil, fmt.Errorf("打开配置文件失败: %w", err)
+		absolutePath, _ := filepath.Abs(path)
+		return nil, fmt.Errorf("打开配置文件 %q 失败，请检查启动目录或使用 -config 指定路径: %w", absolutePath, err)
 	}
 	defer file.Close()
 

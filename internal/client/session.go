@@ -258,9 +258,9 @@ func (d *TerminalDisplay) ShowChat(msg *protocol.Message) {
 
 func (d *TerminalDisplay) ShowSystem(msg *protocol.Message) {
 	if msg.Timestamp != "" {
-		fmt.Printf("[%s] *** %s ***\n", msg.Timestamp, msg.Content)
+		fmt.Printf("[%s]  %s \n", msg.Timestamp, msg.Content)
 	} else {
-		fmt.Printf("*** %s ***\n", msg.Content)
+		fmt.Printf(" %s \n", msg.Content)
 	}
 }
 

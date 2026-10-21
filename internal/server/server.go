@@ -308,7 +308,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		fmt.Sprintf("🎉 欢迎 %s 来到聊天室！", cleanName),
 	))
 	client.Send(protocol.NewSystemMessage(
-		"💡 /help 查看命令 | /msg 用户名 消息 私聊 | /users 在线 | /quit 退出",
+		"💡 /help 查看命令 | /msg 用户名 消息 私聊 | /users 在线 | /profile 查看用户信息 | /rank 查看前十名 | /rank[1-100] | /quit 退出",
 	))
 
 	room.Join(client)
