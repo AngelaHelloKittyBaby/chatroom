@@ -126,6 +126,7 @@ func printHelp() {
 	fmt.Println("━━━━━━━━━ 命令列表 ━━━━━━━━━")
 	fmt.Println("  /msg <用户名> <消息>  发送私聊消息")
 	fmt.Println("  /users                查看在线用户")
+	fmt.Println("  /profile              查看当前用户资料（优先读取 Redis 缓存）")
 	fmt.Println("  /quit                 退出聊天室")
 	fmt.Println("  /rank [1-100]          Activity ranking")
 	fmt.Println("  /help                 显示此帮助")
