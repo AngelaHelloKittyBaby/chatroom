@@ -80,6 +80,7 @@ func main() {
 	go func() {
 		for msg := range msgCh {
 			client.DispatchMessage(msg, &display)
+
 		}
 		fmt.Println("\n❌ 与服务器的连接已断开")
 		cancel()
@@ -127,7 +128,6 @@ func printHelp() {
 	fmt.Println("  /users                查看在线用户")
 	fmt.Println("  /quit                 退出聊天室")
 	fmt.Println("  /rank [1-100]          Activity ranking")
-	fmt.Println("  /profile               User profile")
 	fmt.Println("  /help                 显示此帮助")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━")
 }
